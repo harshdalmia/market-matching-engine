@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+   Flat, near-black, monospace. No gradients or glass: the terminal reads as
+   dense information, and surface treatments compete with the numbers.
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-bg: #000000;
+  --color-panel: #0a0b0c;
+  --color-panel-head: #101214;
+  --color-panel-raised: #14171a;
+  --color-line: #1c1f23;
+  --color-line-soft: #141719;
+
+  --color-txt: #e6e8ea;
+  --color-txt-dim: #8b9096;
+  --color-txt-faint: #5a6068;
+
+  /* Bids / upticks */
+  --color-up: #2ee6a8;
+  --color-up-solid: #10b981;
+  /* Asks / downticks */
+  --color-down: #ff5c6c;
+  --color-down-solid: #e5484d;
+
+  --color-accent: #2ee6a8;
+  --color-warn: #f0b429;
+
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
+  --font-sans: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --animate-ping-slow: ping-slow 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-shake: shake 0.4s ease-in-out;
+}
+
+@keyframes ping-slow {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  75%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    height: 100%;
+    /* The terminal is a fixed viewport application; individual panes scroll. */
+    overflow: hidden;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-txt);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    -webkit-font-smoothing: antialiased;
+    /* Digits must not reflow as they change, everywhere. */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  input {
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Strip the spinners: they steal width from a right-aligned numeric field. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #26292d transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #26292d;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilities
+   --------------------------------------------------------------------------- */
+
+/* A bordered pane. */
+@utility panel {
+  background-color: var(--color-panel);
+  border: 1px solid var(--color-line);
+}
+
+/* The label strip at the top of a pane. */
+@utility panel-head {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  padding-inline: 10px;
+  background-color: var(--color-panel-head);
+  border-bottom: 1px solid var(--color-line);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-txt-dim);
+  flex-shrink: 0;
+}
+
+/* Column headings inside a table-like pane. */
+@utility col-head {
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-txt-faint);
+}
+
+@utility skeleton-bar {
+  background: linear-gradient(
+    90deg,
+    var(--color-line-soft) 25%,
+    var(--color-panel-raised) 37%,
+    var(--color-line-soft) 63%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}

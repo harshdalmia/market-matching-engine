@@ -1,0 +1,26 @@
+# Compiled binaries.
+# These are anchored with a leading slash on purpose: an unanchored `engine`
+# would also match the internal/engine/ directory and silently exclude its
+# source files from the repository.
+/engine
+/engine.exe
+*.dll
+*.so
+*.dylib
+
+# Test and coverage output
+*.test
+*.out
+coverage.*
+
+# Write-ahead log data
+/data/
+*.wal
+
+# Local environment
+.env
+.env.local
+
+# Editor / OS
+.DS_Store
+.idea/

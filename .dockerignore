@@ -1,0 +1,13 @@
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+fly.toml
+
+# The frontend deploys separately (Vercel); it has no place in the Go image.
+web/
+
+engine
+engine.exe
+*.test
