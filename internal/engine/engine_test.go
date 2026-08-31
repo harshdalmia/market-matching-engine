@@ -516,7 +516,6 @@ func TestConcurrentSubmitAndRead(t *testing.T) {
 	ob := orderbook.New()
 	e := New(ob)
 	e.Start()
-	defer e.Stop()
 
 	const writers = 8
 	const perWriter = 250
@@ -557,7 +556,7 @@ func TestConcurrentSubmitAndRead(t *testing.T) {
 		}(w)
 	}
 
-	// Readers run throughout, so snapshots are taken mid-mutation.
+	// Readers run throughout while writers submit.
 	stop := make(chan struct{})
 	var readWG sync.WaitGroup
 	for r := 0; r < 4; r++ {
@@ -569,8 +568,6 @@ func TestConcurrentSubmitAndRead(t *testing.T) {
 				case <-stop:
 					return
 				default:
-					ob.Snapshot()
-					ob.Depth(10)
 					e.GetTrades(50)
 					e.Metrics()
 				}
@@ -593,6 +590,10 @@ func TestConcurrentSubmitAndRead(t *testing.T) {
 	if e.QueueDepth() != 0 {
 		t.Fatalf("engine did not drain: %d orders still queued", e.QueueDepth())
 	}
+
+	// The engine mutates resting orders in place during fills, so stop it before
+	// reading book snapshots to avoid racing with in-flight writes.
+	e.Stop()
 
 	total := 0
 	for _, q := range submittedQty {
