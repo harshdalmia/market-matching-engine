@@ -121,16 +121,13 @@ func TestStreamPushesTrades(t *testing.T) {
 	body, cleanup := serveStream(t, router, "/stream")
 	defer cleanup()
 
-	// Drain the opening snapshots first.
-	readFrames(t, body, len(testSymbols), 3*time.Second)
-
 	venue := defaultVenue(t, x)
 	doJSON(t, router, http.MethodPost, "/order",
 		`{"symbol":"`+venue.Symbol+`","trader_id":"a","side":"SELL","price":100,"quantity":5}`)
 	doJSON(t, router, http.MethodPost, "/order",
 		`{"symbol":"`+venue.Symbol+`","trader_id":"b","side":"BUY","price":100,"quantity":5}`)
 
-	text := readFrames(t, body, 3, 5*time.Second)
+	text := readFrames(t, body, len(testSymbols)+3, 5*time.Second)
 
 	if !strings.Contains(text, "event: "+stream.EventTrade) {
 		t.Errorf("a crossing pair should push a trade event, got:\n%s", text)
