@@ -96,6 +96,7 @@ func TestWALReplayReconstructsState(t *testing.T) {
 	if !original.Drain(15 * time.Second) {
 		t.Fatalf("original run did not drain")
 	}
+	original.Stop()
 
 	// Cancel a couple of survivors to exercise cancel records too.
 	cancelled := 0
@@ -116,13 +117,11 @@ func TestWALReplayReconstructsState(t *testing.T) {
 	}
 
 	want := fingerprint(t, original)
-	original.Stop()
 	log.Close()
 
 	// ---- Recovery run -------------------------------------------------
 	recovered := New(symbols)
 	recovered.Start()
-	defer recovered.Stop()
 
 	applied, err := wal.Replay(path, func(record wal.Record) error {
 		v, ok := recovered.Resolve(record.Symbol)
@@ -156,6 +155,7 @@ func TestWALReplayReconstructsState(t *testing.T) {
 		t.Fatalf("recovery run did not drain")
 	}
 
+	recovered.Stop()
 	got := fingerprint(t, recovered)
 
 	if got != want {
@@ -195,7 +195,6 @@ func TestWALReplayIsIdempotentPerRecordSet(t *testing.T) {
 	replayInto := func() string {
 		x := New([]string{"AAA"})
 		x.Start()
-		defer x.Stop()
 
 		if _, err := wal.Replay(path, func(r wal.Record) error {
 			v, _ := x.Resolve(r.Symbol)
@@ -208,7 +207,10 @@ func TestWALReplayIsIdempotentPerRecordSet(t *testing.T) {
 			t.Fatalf("replaying: %v", err)
 		}
 
-		x.Drain(10 * time.Second)
+		if !x.Drain(10 * time.Second) {
+			t.Fatalf("replay run did not drain")
+		}
+		x.Stop()
 		return fingerprint(t, x)
 	}
 
