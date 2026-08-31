@@ -1,0 +1,47 @@
+services:
+  # Production-friendly Render deploy for the matching engine.
+  #
+  # This service is intentionally single-instance: the order books, metrics,
+  # and trade tape all live in process memory.
+  - type: web
+    name: matching-engine
+    runtime: docker
+    plan: 0.5c-512mb
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - cmd/**
+        - internal/**
+        - Dockerfile
+        - .dockerignore
+        - go.mod
+        - go.sum
+        - render.yaml
+    healthCheckPath: /health
+    numInstances: 1
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: SYMBOLS
+        value: "BTC/USD,ETH/USD,AAPL"
+      - key: STARTING_CASH
+        value: "100000"
+      - key: WAL_PATH
+        value: /app/data/engine.wal
+    disk:
+      name: engine-data
+      mountPath: /app/data
+      sizeGB: 1
+
+# Free demo mode on Render:
+# - change `plan` to `free`
+# - remove the `disk` block
+# - remove `WAL_PATH` or set it to an empty string
+# Free web services spin down after 15 minutes of no inbound traffic and cannot
+# use persistent disks, so they are fine for demos but not for a durable market.
