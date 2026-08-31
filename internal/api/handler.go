@@ -343,7 +343,7 @@ func (h *Handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
 		"order_id":      order.ID,
 		"symbol":        order.Symbol,
-		"status":        order.Status,
+		"status":        models.StatusNew,
 		"type":          order.Type,
 		"time_in_force": order.TimeInForce,
 		"stop_price":    order.StopPrice,
