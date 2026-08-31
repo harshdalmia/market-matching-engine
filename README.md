@@ -126,6 +126,9 @@ Leaving `ALLOWED_ORIGINS` unset allows any origin. That is reasonable here
 because the API has no authentication — anyone who can reach it can already
 place orders — but it is worth pinning once deployed.
 
+On Docker-based hosts, this repo standardises on `/app/data/engine.wal` for a
+persistent WAL path. The included `render.yaml` mounts Render's disk there.
+
 ### Testing
 
 ```bash
@@ -618,7 +621,25 @@ Clicking any ladder level loads it into the ticket.
 
 The frontend and engine deploy separately.
 
-**Engine → any long-running container host** (Fly.io, Railway, Render, a VM):
+**Engine → Render**
+
+This repo includes [`render.yaml`](./render.yaml), which deploys the engine as a
+single Docker web service, probes `GET /health`, and mounts a 1 GB persistent
+disk at `/app/data` so the write-ahead log survives restarts.
+
+1. Push the repo to GitHub or GitLab.
+2. In Render, create a new **Blueprint** and point it at the repo.
+3. Before the first sync, change `name` and `region` in `render.yaml` if you do
+   not want `matching-engine` in `virginia`.
+4. After the deploy goes live, update `ALLOWED_ORIGINS` from `*` to your
+   frontend URL, for example `https://your-frontend.vercel.app`.
+
+If you only want a stateless demo, Render's free web service works too, but it
+spins down after 15 minutes with no inbound traffic and cannot attach a
+persistent disk. For that mode, change `plan` to `free`, remove the `disk`
+block, and unset `WAL_PATH`.
+
+**Engine → Fly.io**
 
 ```bash
 fly secrets set ALLOWED_ORIGINS="https://your-frontend.vercel.app"
@@ -644,7 +665,8 @@ process's memory. That has hard consequences:
   on a persistent volume, state is rebuilt on boot by replaying the log; without
   one, a redeploy starts from an empty book.
 - **Scale-to-zero must be off.** `fly.toml` sets `auto_stop_machines = false`
-  and `min_machines_running = 1` for exactly this reason.
+  and `min_machines_running = 1`; on Render, keep the service at
+  `numInstances: 1` and do not use the free plan for anything stateful.
 
 The write-ahead log makes recovery possible but is not a complete durability
 story: it grows without bound. A production system would snapshot state
