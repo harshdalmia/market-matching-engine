@@ -24,18 +24,36 @@ func (e *Engine) GenerateOrders(n int) {
 
 		quantity := rand.Intn(100) + 1 // 1–100
 
-		order := &models.Order{
-			ID:        fmt.Sprintf("GEN-%06d", i+1),
-			TraderID:  fmt.Sprintf("TRADER-%03d", rand.Intn(50)+1),
-			Side:      side,
-			Price:     price,
-			Quantity:  quantity,
-			Remaining: quantity,
-			Timestamp: time.Now().UnixNano(),
-			Status:    models.StatusNew,
+		// Mostly resting limit orders, with a minority of immediate order types
+		// so a stress run exercises every matching path rather than just GTC.
+		orderType := models.TypeLimit
+		tif := models.TIFGTC
+
+		switch roll := rand.Float64(); {
+		case roll < 0.06:
+			orderType = models.TypeMarket
+			tif = models.TIFIOC
+			price = 0
+		case roll < 0.12:
+			tif = models.TIFIOC
+		case roll < 0.15:
+			tif = models.TIFFOK
 		}
 
-		e.Submit(order)
+		order := &models.Order{
+			ID:          fmt.Sprintf("GEN-%06d", i+1),
+			TraderID:    fmt.Sprintf("TRADER-%03d", rand.Intn(50)+1),
+			Side:        side,
+			Type:        orderType,
+			TimeInForce: tif,
+			Price:       price,
+			Quantity:    quantity,
+			Remaining:   quantity,
+			Timestamp:   time.Now().UnixNano(),
+			Status:      models.StatusNew,
+		}
+
+		e.SubmitBlocking(order)
 	}
 
 	// Wait for engine to drain the channel
@@ -46,11 +64,10 @@ func (e *Engine) GenerateOrders(n int) {
 	time.Sleep(100 * time.Millisecond)
 
 	elapsed := time.Since(start).Milliseconds()
-	trades := e.GetTrades()
 
 	fmt.Printf("[GENERATOR] Done.\n")
 	fmt.Printf("[GENERATOR] Orders submitted : %d\n", n)
-	fmt.Printf("[GENERATOR] Trades executed  : %d\n", len(trades))
+	fmt.Printf("[GENERATOR] Trades executed  : %d\n", e.TradeCount())
 	fmt.Printf("[GENERATOR] Time elapsed     : %d ms\n", elapsed)
 	if elapsed > 0 {
 		fmt.Printf("[GENERATOR] Throughput       : %d orders/sec\n\n", int64(n)*1000/elapsed)
